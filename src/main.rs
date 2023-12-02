@@ -34,6 +34,12 @@ fn main() {
     println!("Part two output: {output2}");
 }
 
+/// Returns the contents of the given file, with any '\r' characters stripped out so we don't
+/// have to worry about them when running on a Windows system.
+///
+/// # Arguments
+///
+/// * `filename` - The name of the file to read
 fn read_input_file(filename: &str) -> String {
     let mut input = read_to_string(filename).unwrap();
     input.retain(|c| c != '\r');
