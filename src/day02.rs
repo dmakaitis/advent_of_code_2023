@@ -78,7 +78,11 @@ impl ColorCount {
     ///
     /// 'results' - the collection of color counts for which to calculate the power.
     fn calculate_power(color_counts: Vec<ColorCount>) -> u32 {
-        let mut max_counts = ColorCount { red: 0, green: 0, blue: 0 };
+        let mut max_counts = ColorCount {
+            red: 0,
+            green: 0,
+            blue: 0,
+        };
 
         for count in color_counts {
             if count.red > max_counts.red {
@@ -126,9 +130,7 @@ impl Game {
         let text = text.strip_prefix(&format!("Game {id}: ")).unwrap();
 
         let results = text.split(';');
-        let results: Vec<_> = results
-            .map(ColorCount::parse)
-            .collect();
+        let results: Vec<_> = results.map(ColorCount::parse).collect();
 
         Game { id, results }
     }
@@ -141,13 +143,20 @@ impl Game {
 ///
 /// 'input' - The input text containing the results of all the games.
 pub fn part_one(input: &str) -> u32 {
-    let max_cubes = ColorCount { red: 12, green: 13, blue: 14 };
+    let max_cubes = ColorCount {
+        red: 12,
+        green: 13,
+        blue: 14,
+    };
 
-    input.lines()
+    input
+        .lines()
         .map(Game::from)
-        .filter(|game| game.results.iter()
-            .all(|result| max_cubes.is_possible(result))
-        )
+        .filter(|game| {
+            game.results
+                .iter()
+                .all(|result| max_cubes.is_possible(result))
+        })
         .map(|game| game.id)
         .sum()
 }
@@ -159,7 +168,8 @@ pub fn part_one(input: &str) -> u32 {
 ///
 /// 'input' - The input text containing the results of all the games.
 pub fn part_two(input: &str) -> u32 {
-    input.lines()
+    input
+        .lines()
         .map(Game::from)
         .map(|game| ColorCount::calculate_power(game.results))
         .sum()
@@ -171,75 +181,125 @@ mod tests {
 
     #[test]
     fn parsing_color_counts() {
-        assert_eq!(ColorCount::parse("3 blue, 4 red"), ColorCount { blue: 3, red: 4, green: 0 });
-        assert_eq!(ColorCount::parse("4 red, 2 green"), ColorCount { red: 4, green: 2, blue: 0 });
-        assert_eq!(ColorCount::parse("6 blue, 2 green"), ColorCount { blue: 6, green: 2, red: 0 });
+        assert_eq!(
+            ColorCount::parse("3 blue, 4 red"),
+            ColorCount {
+                blue: 3,
+                red: 4,
+                green: 0
+            }
+        );
+        assert_eq!(
+            ColorCount::parse("4 red, 2 green"),
+            ColorCount {
+                red: 4,
+                green: 2,
+                blue: 0
+            }
+        );
+        assert_eq!(
+            ColorCount::parse("6 blue, 2 green"),
+            ColorCount {
+                blue: 6,
+                green: 2,
+                red: 0
+            }
+        );
     }
 
     #[test]
     fn testing_possiblities() {
-        let max_counts = ColorCount { red: 12, green: 13, blue: 14 };
+        let max_counts = ColorCount {
+            red: 12,
+            green: 13,
+            blue: 14,
+        };
 
-        assert_eq!(max_counts.is_possible(&ColorCount::new(4, 0,3)), true);
+        assert_eq!(max_counts.is_possible(&ColorCount::new(4, 0, 3)), true);
         assert_eq!(max_counts.is_possible(&ColorCount::new(1, 2, 6)), true);
-        assert_eq!(max_counts.is_possible(&ColorCount::new(0,2, 0)), true);
+        assert_eq!(max_counts.is_possible(&ColorCount::new(0, 2, 0)), true);
 
-        assert_eq!(max_counts.is_possible(&ColorCount::new(20, 8,6)), false);
+        assert_eq!(max_counts.is_possible(&ColorCount::new(20, 8, 6)), false);
         assert_eq!(max_counts.is_possible(&ColorCount::new(4, 13, 5)), true);
-        assert_eq!(max_counts.is_possible(&ColorCount::new(1,5, 0)), true);
+        assert_eq!(max_counts.is_possible(&ColorCount::new(1, 5, 0)), true);
     }
 
     #[test]
     fn calculate_power() {
-        assert_eq!(ColorCount::calculate_power(vec![
-            ColorCount::new(4, 0, 3),
-            ColorCount::new(1, 2, 6),
-            ColorCount::new(0, 2, 0),
-        ]), 48);
+        assert_eq!(
+            ColorCount::calculate_power(vec![
+                ColorCount::new(4, 0, 3),
+                ColorCount::new(1, 2, 6),
+                ColorCount::new(0, 2, 0),
+            ]),
+            48
+        );
     }
 
     #[test]
     fn retrieving_the_game_id() {
-        assert_eq!(get_game_id("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"), Some(1));
-        assert_eq!(get_game_id("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"), Some(3));
+        assert_eq!(
+            get_game_id("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"),
+            Some(1)
+        );
+        assert_eq!(
+            get_game_id("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"),
+            Some(3)
+        );
         assert_eq!(get_game_id("Some random string"), None);
     }
 
     #[test]
     fn parse_game_results() {
-        assert_eq!(Game::from("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"), Game {
-            id: 1,
-            results: vec![
-                ColorCount::new(4, 0, 3),
-                ColorCount::new(1, 2, 6),
-                ColorCount::new(0,2,0)
-            ]
-        });
-        assert_eq!(Game::from("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"), Game {
-            id: 3,
-            results: vec![
-                ColorCount::new(20, 8, 6),
-                ColorCount::new(4, 13, 5),
-                ColorCount::new(1, 5, 0)
-            ]
-        });
+        assert_eq!(
+            Game::from("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"),
+            Game {
+                id: 1,
+                results: vec![
+                    ColorCount::new(4, 0, 3),
+                    ColorCount::new(1, 2, 6),
+                    ColorCount::new(0, 2, 0),
+                ],
+            }
+        );
+        assert_eq!(
+            Game::from("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"),
+            Game {
+                id: 3,
+                results: vec![
+                    ColorCount::new(20, 8, 6),
+                    ColorCount::new(4, 13, 5),
+                    ColorCount::new(1, 5, 0),
+                ],
+            }
+        );
     }
 
     #[test]
     fn part_one_correct() {
-        assert_eq!(part_one("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+        assert_eq!(
+            part_one(
+                "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
 Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
 Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
 Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
-Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"), 8);
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
+            ),
+            8
+        );
     }
 
     #[test]
     fn part_two_correct() {
-        assert_eq!(part_two("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+        assert_eq!(
+            part_two(
+                "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
 Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
 Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
 Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
-Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"), 2286);
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
+            ),
+            2286
+        );
     }
 }

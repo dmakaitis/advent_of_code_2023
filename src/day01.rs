@@ -128,7 +128,8 @@ fn get_last_digit_or_name(text: &str) -> u32 {
 
 /// Returns the sum of the calibration values found in each line of the input.
 pub fn part_one(input: &str) -> u32 {
-    input.lines()
+    input
+        .lines()
         .map(|line| (get_first_digit(line), get_last_digit(line)))
         .map(|(f, l)| 10 * f + l)
         .sum()
@@ -137,7 +138,8 @@ pub fn part_one(input: &str) -> u32 {
 /// Returns the sum of the calibration values found in each line of the input, taking into account
 /// that the calibration values may be spelled out by name rather than using digit characters.
 pub fn part_two(input: &str) -> u32 {
-    input.lines()
+    input
+        .lines()
         .map(|line| (get_first_digit_or_name(line), get_last_digit_or_name(line)))
         .map(|(f, l)| 10 * f + l)
         .sum()
@@ -187,20 +189,30 @@ mod tests {
 
     #[test]
     fn part_one_correct() {
-        assert_eq!(part_one("1abc2
+        assert_eq!(
+            part_one(
+                "1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
-treb7uchet"), 142);
+treb7uchet"
+            ),
+            142
+        );
     }
 
     #[test]
     fn part_two_correct() {
-        assert_eq!(part_two("two1nine
+        assert_eq!(
+            part_two(
+                "two1nine
 eightwothree
 abcone2threexyz
 xtwone3four
 4nineeightseven2
 zoneight234
-7pqrstsixteen"), 281);
+7pqrstsixteen"
+            ),
+            281
+        );
     }
 }
