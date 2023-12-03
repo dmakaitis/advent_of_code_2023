@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 /// A symbol located at a indexed location
 #[derive(Debug, PartialEq)]
 struct Symbol {
@@ -34,10 +36,14 @@ struct Row {
     symbols: Vec<Symbol>,
 }
 
-impl Row {
-    /// Creates a row with the given numbers and symbols and their locations.
-    fn new(numbers: Vec<Number>, symbols: Vec<Symbol>) -> Row {
-        Row { numbers, symbols }
+impl FromStr for Row {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Row {
+            numbers: get_indexed_numbers(s),
+            symbols: get_symbol_indices(s),
+        })
     }
 }
 
@@ -87,15 +93,6 @@ fn get_indexed_numbers(text: &str) -> Vec<Number> {
     }
 
     result
-}
-
-/// Parsed a row from the schematic, return the values and locations of all symbols and numbers.
-///
-/// #Argument
-///
-/// 'text' - The schematic row to parse.
-fn parse_row(text: &str) -> Row {
-    Row::new(get_indexed_numbers(text), get_symbol_indices(text))
 }
 
 /// Calculates the sum of all numbers in the middle row that have symbols adjacent to them in
@@ -158,15 +155,25 @@ fn calculate_product(a: &Row, b: &Row, c: &Row) -> u32 {
         .sum()
 }
 
-/// Calculates the sum of all numbers in the schematic that have an adjacent symbol.
+/// Scans the entire schematic and calculates a value based upon it based on the provided
+/// calculation function.
 ///
-/// #Argument
+/// # Argumetns
 ///
-/// 'input' - The input schematic.
-pub fn part_one(input: &str) -> u32 {
-    let parsed: Vec<_> = input.lines().map(parse_row).collect();
+/// 'schematic' - The schematic to scan.
+///
+/// 'func' - The calculation function to be used to produce a value from the schematic.
+fn scan_schematic<F>(schematic: &str, func: F) -> u32
+where
+    F: Fn(&Row, &Row, &Row) -> u32,
+{
+    let parsed: Vec<_> = schematic
+        .lines()
+        .map(Row::from_str)
+        .map(Result::unwrap)
+        .collect();
 
-    let empty_row = Row::new(vec![], vec![]);
+    let empty_row = "".parse().unwrap();
 
     let mut total = 0;
 
@@ -178,10 +185,19 @@ pub fn part_one(input: &str) -> u32 {
             &parsed[i + 1]
         };
 
-        total += calculate_sum(last, r, next);
+        total += func(last, r, next);
     }
 
     total
+}
+
+/// Calculates the sum of all numbers in the schematic that have an adjacent symbol.
+///
+/// #Argument
+///
+/// 'input' - The input schematic.
+pub fn part_one(input: &str) -> u32 {
+    scan_schematic(input, calculate_sum)
 }
 
 /// Calculates the product of all gears in the schematic that have two adjacent numbers.
@@ -190,24 +206,7 @@ pub fn part_one(input: &str) -> u32 {
 ///
 /// 'input' - The input schematic.
 pub fn part_two(input: &str) -> u32 {
-    let parsed: Vec<_> = input.lines().map(parse_row).collect();
-
-    let empty_row = Row::new(vec![], vec![]);
-
-    let mut total = 0;
-
-    for (i, r) in parsed.iter().enumerate() {
-        let last = if i == 0 { &empty_row } else { &parsed[i - 1] };
-        let next = if i == parsed.len() - 1 {
-            &empty_row
-        } else {
-            &parsed[i + 1]
-        };
-
-        total += calculate_product(last, r, next);
-    }
-
-    total
+    scan_schematic(input, calculate_product)
 }
 
 #[cfg(test)]
@@ -227,7 +226,7 @@ mod tests {
             vec![
                 Symbol::new('$', 3),
                 Symbol::new('*', 5),
-                Symbol::new('$', 9)
+                Symbol::new('$', 9),
             ]
         );
     }
@@ -249,16 +248,25 @@ mod tests {
     #[test]
     fn row_parsing() {
         assert_eq!(
-            parse_row("...*......"),
-            Row::new(vec![], vec![Symbol::new('*', 3)])
+            Row::from_str("...*......").unwrap(),
+            Row {
+                numbers: vec![],
+                symbols: vec![Symbol::new('*', 3)]
+            }
         );
         assert_eq!(
-            parse_row("..35..633."),
-            Row::new(vec![Number::new(35, 2, 4), Number::new(633, 6, 9)], vec![])
+            Row::from_str("..35..633.").unwrap(),
+            Row {
+                numbers: vec![Number::new(35, 2, 4), Number::new(633, 6, 9)],
+                symbols: vec![]
+            }
         );
         assert_eq!(
-            parse_row("...$.*...."),
-            Row::new(vec![], vec![Symbol::new('$', 3), Symbol::new('*', 5)])
+            Row::from_str("...$.*....").unwrap(),
+            Row {
+                numbers: vec![],
+                symbols: vec![Symbol::new('$', 3), Symbol::new('*', 5)]
+            }
         );
     }
 
@@ -266,458 +274,450 @@ mod tests {
     fn calculate_sum_for_three_adjacent_rows() {
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 3)]),
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![], vec![])
-            ),
-            0
-        );
-        assert_eq!(
-            calculate_sum(
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 3)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("...#......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 0)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("#.........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 1)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str(".#........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 2)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..#.......").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 3)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("...#......").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 4)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("....#.....").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 5)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str(".....#....").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 6)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("......#...").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 7)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str(".......#..").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 8)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("........#.").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 9)]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str(".........#").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 0)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("#.35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 1)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str(".#35......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 4)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35#.....").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 5)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35.#....").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 6)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35..#...").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 7)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35...#..").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 8)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35....#.").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![Symbol::new('#', 9)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35.....#").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 0)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("#.........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 1)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str(".#........").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 2)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("..#.......").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 3)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("...#......").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 4)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("....#.....").unwrap(),
             ),
             35
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 5)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str(".....#....").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 6)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("......#...").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 7)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str(".......#..").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 8)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str("........#.").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(35, 2, 4)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 9)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("..35......").unwrap(),
+                &Row::from_str(".........#").unwrap(),
             ),
             0
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 0)]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("#.........").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 1)]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str(".#........").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 2)]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..#.......").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 3)]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("...#......").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 4)]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("....#.....").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![Symbol::new('#', 3)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("617#......").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("617.#.....").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 0)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("#.........").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 1)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str(".#........").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 2)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("..#.......").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 3)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("...#......").unwrap(),
             ),
             617
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(617, 0, 3)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 4)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("617.......").unwrap(),
+                &Row::from_str("....#.....").unwrap(),
             ),
             0
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 5)]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str(".....#....").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 6)]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("......#...").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             123
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 7)]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str(".......#..").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             123
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 8)]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("........#.").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             123
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![Symbol::new('#', 9)]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![])
+                &Row::from_str(".........#").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             123
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![Symbol::new('#', 5)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str(".....#.123").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![Symbol::new('#', 6)]),
-                &Row::new(vec![], vec![])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str("......#123").unwrap(),
+                &Row::from_str("..........").unwrap(),
             ),
             123
         );
 
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 5)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str(".....#....").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 6)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str("......#...").unwrap(),
             ),
             123
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 7)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str(".......#..").unwrap(),
             ),
             123
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 8)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str("........#.").unwrap(),
             ),
             123
         );
         assert_eq!(
             calculate_sum(
-                &Row::new(vec![], vec![]),
-                &Row::new(vec![Number::new(123, 7, 10)], vec![]),
-                &Row::new(vec![], vec![Symbol::new('#', 9)])
+                &Row::from_str("..........").unwrap(),
+                &Row::from_str(".......123").unwrap(),
+                &Row::from_str(".........#").unwrap(),
             ),
             123
         );
@@ -727,25 +727,25 @@ mod tests {
     fn calculate_product_for_three_adjacent_rows() {
         assert_eq!(
             calculate_product(
-                &parse_row("..35..633."),
-                &parse_row("......#..."),
-                &parse_row("617*......")
+                &Row::from_str("..35..633.").unwrap(),
+                &Row::from_str("......#...").unwrap(),
+                &Row::from_str("617*......").unwrap(),
             ),
             0
         );
         assert_eq!(
             calculate_product(
-                &parse_row("467..114.."),
-                &parse_row("...*......"),
-                &parse_row("..35..633.")
+                &Row::from_str("467..114..").unwrap(),
+                &Row::from_str("...*......").unwrap(),
+                &Row::from_str("..35..633.").unwrap(),
             ),
             16345
         );
         assert_eq!(
             calculate_product(
-                &parse_row("......755."),
-                &parse_row("...$.*...."),
-                &parse_row(".664.598..")
+                &Row::from_str("......755.").unwrap(),
+                &Row::from_str("...$.*....").unwrap(),
+                &Row::from_str(".664.598..").unwrap(),
             ),
             451490
         );
