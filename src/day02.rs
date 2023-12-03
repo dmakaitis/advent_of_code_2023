@@ -16,7 +16,7 @@ impl ColorCount {
     /// 'green' - The green value
     ///
     /// 'blue' The blue value
-    fn new(red: u32, green: u32, blue: u32) -> ColorCount {
+    fn _new(red: u32, green: u32, blue: u32) -> ColorCount {
         ColorCount { red, green, blue }
     }
 
@@ -215,22 +215,22 @@ mod tests {
             blue: 14,
         };
 
-        assert_eq!(max_counts.is_possible(&ColorCount::new(4, 0, 3)), true);
-        assert_eq!(max_counts.is_possible(&ColorCount::new(1, 2, 6)), true);
-        assert_eq!(max_counts.is_possible(&ColorCount::new(0, 2, 0)), true);
+        assert_eq!(max_counts.is_possible(&ColorCount::_new(4, 0, 3)), true);
+        assert_eq!(max_counts.is_possible(&ColorCount::_new(1, 2, 6)), true);
+        assert_eq!(max_counts.is_possible(&ColorCount::_new(0, 2, 0)), true);
 
-        assert_eq!(max_counts.is_possible(&ColorCount::new(20, 8, 6)), false);
-        assert_eq!(max_counts.is_possible(&ColorCount::new(4, 13, 5)), true);
-        assert_eq!(max_counts.is_possible(&ColorCount::new(1, 5, 0)), true);
+        assert_eq!(max_counts.is_possible(&ColorCount::_new(20, 8, 6)), false);
+        assert_eq!(max_counts.is_possible(&ColorCount::_new(4, 13, 5)), true);
+        assert_eq!(max_counts.is_possible(&ColorCount::_new(1, 5, 0)), true);
     }
 
     #[test]
     fn calculate_power() {
         assert_eq!(
             ColorCount::calculate_power(vec![
-                ColorCount::new(4, 0, 3),
-                ColorCount::new(1, 2, 6),
-                ColorCount::new(0, 2, 0),
+                ColorCount::_new(4, 0, 3),
+                ColorCount::_new(1, 2, 6),
+                ColorCount::_new(0, 2, 0),
             ]),
             48
         );
@@ -256,9 +256,9 @@ mod tests {
             Game {
                 id: 1,
                 results: vec![
-                    ColorCount::new(4, 0, 3),
-                    ColorCount::new(1, 2, 6),
-                    ColorCount::new(0, 2, 0),
+                    ColorCount::_new(4, 0, 3),
+                    ColorCount::_new(1, 2, 6),
+                    ColorCount::_new(0, 2, 0),
                 ],
             }
         );
@@ -267,9 +267,9 @@ mod tests {
             Game {
                 id: 3,
                 results: vec![
-                    ColorCount::new(20, 8, 6),
-                    ColorCount::new(4, 13, 5),
-                    ColorCount::new(1, 5, 0),
+                    ColorCount::_new(20, 8, 6),
+                    ColorCount::_new(4, 13, 5),
+                    ColorCount::_new(1, 5, 0),
                 ],
             }
         );
