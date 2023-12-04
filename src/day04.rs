@@ -9,40 +9,48 @@ struct Card {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct CardParseError {}
+struct CardParseError {
+    message: &'static str
+}
+
+impl CardParseError {
+    fn msg(message: &'static str) -> CardParseError {
+        CardParseError { message }
+    }
+}
 
 impl FromStr for Card {
     type Err = CardParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let card = s.strip_prefix("Card ").ok_or(CardParseError {})?;
+        let card = s.strip_prefix("Card ").ok_or(CardParseError::msg("Missing 'Card' prefix"))?;
 
         let mut card_parts = card.split(':');
         let id: u32 = card_parts
             .next()
-            .ok_or(CardParseError {})?
+            .ok_or(CardParseError::msg("Failed find card ID"))?
             .trim()
             .parse()
-            .map_err(|_| CardParseError {})?;
+            .map_err(|_| CardParseError::msg("Failed to parse card ID"))?;
 
-        let card = card_parts.next().ok_or(CardParseError {})?;
+        let card = card_parts.next().ok_or(CardParseError::msg("Missing number sets on card"))?;
 
         let mut card_parts = card.split('|');
-        let winning: Vec<_> = card_parts
+        let winning: Result<Vec<_>, _> = card_parts
             .next()
-            .ok_or(CardParseError {})?
+            .ok_or(CardParseError::msg("Failed to find first group of card numbers"))?
             .split_whitespace()
             .map(u32::from_str)
-            .map(Result::unwrap)
             .collect();
+        let winning = winning.map_err(|_| CardParseError::msg("Failed to parse number from first group"))?;
 
-        let numbers: Vec<_> = card_parts
+        let numbers: Result<Vec<_>, _> = card_parts
             .next()
-            .ok_or(CardParseError {})?
+            .ok_or(CardParseError::msg("Failed to find second group of card numbers"))?
             .split_whitespace()
             .map(u32::from_str)
-            .map(Result::unwrap)
             .collect();
+        let numbers = numbers.map_err(|_| CardParseError::msg("Failed to parse card number from second group"))?;
 
         Ok(Card {
             id,
