@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 /// Representation of counts of cube by color that are pulled from the bag.
 #[derive(Debug, PartialEq)]
 struct ColorCount {
@@ -17,46 +19,6 @@ impl ColorCount {
     ///
     /// 'blue' The blue value
     fn _new(red: u32, green: u32, blue: u32) -> ColorCount {
-        ColorCount { red, green, blue }
-    }
-
-    /// Parses the input string to produce a color count. The input string should be a comma delimited
-    /// list of number and color pairs, such as '1 blue, 4 red' or '3 green, 4 blue'.
-    ///
-    /// # Arguments
-    ///
-    /// 'text' - the input string to parse
-    ///
-    /// # Panic
-    ///
-    /// Panics if the input string is invalid or contains an unrecognized color name.
-    fn parse(text: &str) -> ColorCount {
-        let mut red = 0;
-        let mut green = 0;
-        let mut blue = 0;
-
-        let parts = text.split(',');
-        for part in parts {
-            let mut values = part.split_whitespace();
-            let count: u32 = values.next().unwrap().parse().unwrap();
-            let color = values.next().unwrap();
-
-            match color {
-                "red" => {
-                    red += count;
-                }
-                "green" => {
-                    green += count;
-                }
-                "blue" => {
-                    blue += count;
-                }
-                _ => {
-                    panic!("Unrecognized color: {color}");
-                }
-            }
-        }
-
         ColorCount { red, green, blue }
     }
 
@@ -100,6 +62,43 @@ impl ColorCount {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ColorCountParseError {}
+
+impl FromStr for ColorCount {
+    type Err = ColorCountParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut red = 0;
+        let mut green = 0;
+        let mut blue = 0;
+
+        let parts = s.split(',');
+        for part in parts {
+            let mut values = part.split_whitespace();
+            let count: u32 = values.next().unwrap().parse().unwrap();
+            let color = values.next().unwrap();
+
+            match color {
+                "red" => {
+                    red += count;
+                }
+                "green" => {
+                    green += count;
+                }
+                "blue" => {
+                    blue += count;
+                }
+                _ => {
+                    return Err(ColorCountParseError {});
+                }
+            }
+        }
+
+        Ok(ColorCount { red, green, blue })
+    }
+}
+
 /// Returns the ID if the game described in the given input, or None if it could not be found.
 ///
 /// # Argument
@@ -118,21 +117,26 @@ struct Game {
     results: Vec<ColorCount>,
 }
 
-impl Game {
-    /// Parses the results from a game from the given input text.
-    ///
-    /// # Argument
-    ///
-    /// 'text' - The game results that need to be parsed.
-    fn from(text: &str) -> Game {
-        let id = get_game_id(text).unwrap();
+#[derive(Debug, PartialEq, Eq, Clone)]
+struct GameParseError {}
 
-        let text = text.strip_prefix(&format!("Game {id}: ")).unwrap();
+impl FromStr for Game {
+    type Err = GameParseError;
+
+    fn from_str(text: &str) -> Result<Self, Self::Err> {
+        let id = get_game_id(text).ok_or(GameParseError {})?;
+
+        let text = text
+            .strip_prefix(&format!("Game {id}: "))
+            .ok_or(GameParseError {})?;
 
         let results = text.split(';');
-        let results: Vec<_> = results.map(ColorCount::parse).collect();
+        let results: Vec<_> = results
+            .map(ColorCount::from_str)
+            .map(Result::unwrap)
+            .collect();
 
-        Game { id, results }
+        Ok(Game { id, results })
     }
 }
 
@@ -151,7 +155,8 @@ pub fn part_one(input: &str) -> u32 {
 
     input
         .lines()
-        .map(Game::from)
+        .map(Game::from_str)
+        .map(Result::unwrap)
         .filter(|game| {
             game.results
                 .iter()
@@ -170,7 +175,8 @@ pub fn part_one(input: &str) -> u32 {
 pub fn part_two(input: &str) -> u32 {
     input
         .lines()
-        .map(Game::from)
+        .map(Game::from_str)
+        .map(Result::unwrap)
         .map(|game| ColorCount::calculate_power(game.results))
         .sum()
 }
@@ -182,27 +188,27 @@ mod tests {
     #[test]
     fn parsing_color_counts() {
         assert_eq!(
-            ColorCount::parse("3 blue, 4 red"),
+            ColorCount::from_str("3 blue, 4 red").unwrap(),
             ColorCount {
                 blue: 3,
                 red: 4,
-                green: 0
+                green: 0,
             }
         );
         assert_eq!(
-            ColorCount::parse("4 red, 2 green"),
+            ColorCount::from_str("4 red, 2 green").unwrap(),
             ColorCount {
                 red: 4,
                 green: 2,
-                blue: 0
+                blue: 0,
             }
         );
         assert_eq!(
-            ColorCount::parse("6 blue, 2 green"),
+            ColorCount::from_str("6 blue, 2 green").unwrap(),
             ColorCount {
                 blue: 6,
                 green: 2,
-                red: 0
+                red: 0,
             }
         );
     }
@@ -252,7 +258,7 @@ mod tests {
     #[test]
     fn parse_game_results() {
         assert_eq!(
-            Game::from("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"),
+            Game::from_str("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green").unwrap(),
             Game {
                 id: 1,
                 results: vec![
@@ -263,7 +269,10 @@ mod tests {
             }
         );
         assert_eq!(
-            Game::from("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"),
+            Game::from_str(
+                "Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"
+            )
+            .unwrap(),
             Game {
                 id: 3,
                 results: vec![
