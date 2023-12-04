@@ -1,25 +1,12 @@
+use std::cmp::Ordering;
+
 /// Returns the value of the first digit found in the given string.
 ///
 /// # Arguments
 ///
 /// 'text' - The string to search for the first digit.
-///
-/// # Panic
-///
-/// Panics if no digit is found in the input string.
-fn get_first_digit(text: &str) -> u32 {
-    for c in text.chars() {
-        match c.to_digit(10) {
-            Some(digit) => {
-                return digit;
-            }
-            None => {
-                // ignore
-            }
-        }
-    }
-
-    panic!("No digit found")
+fn get_first_digit(text: &str) -> Option<u32> {
+    text.chars().filter_map(|c| c.to_digit(10)).next()
 }
 
 /// Returns the value of the last digit found in the given string.
@@ -27,29 +14,8 @@ fn get_first_digit(text: &str) -> u32 {
 /// # Arguments
 ///
 /// 'text' - The string to search for the last digit.
-///
-/// # Panic
-///
-/// Panics if no digit is found in the input string.
-fn get_last_digit(text: &str) -> u32 {
-    let mut last = 999;
-
-    for c in text.chars() {
-        match c.to_digit(10) {
-            Some(digit) => {
-                last = digit;
-            }
-            None => {
-                // ignore
-            }
-        }
-    }
-
-    if last > 9 {
-        panic!("No digit found")
-    }
-
-    last
+fn get_last_digit(text: &str) -> Option<u32> {
+    text.chars().rev().filter_map(|c| c.to_digit(10)).next()
 }
 
 const NAME_VALUE_MAP: &[(&str, u32)] = &[
@@ -74,30 +40,30 @@ const NAME_VALUE_MAP: &[(&str, u32)] = &[
     ("nine", 9),
 ];
 
+fn get_sorted_digit_or_name<F>(text: &str, sorter: F) -> Option<u32>
+where
+    F: Fn(&(u32, usize), &(u32, usize)) -> Ordering,
+{
+    let mut vec: Vec<_> = NAME_VALUE_MAP
+        .iter()
+        .map(|(name, value)| (*value, text.find(name)))
+        .filter(|(_, found)| found.is_some())
+        .map(|(value, found)| (value, found.unwrap()))
+        .collect();
+
+    vec.sort_by(sorter);
+
+    vec.iter().map(|(value, _)| *value).next()
+}
+
 /// Returns the value of the first digit or name of a digit found in the given string. A digit name
 /// may be one of 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', or 'nine'.
 ///
 /// # Arguments
 ///
 /// 'text' - The string to search for the first digit or digit name.
-///
-/// # Panic
-///
-/// Panics if no digit or digit name is found in the input string.
-fn get_first_digit_or_name(text: &str) -> u32 {
-    let mut first_index = u32::MAX;
-    let mut first_value = 0;
-
-    for (name, value) in NAME_VALUE_MAP {
-        if let Some(found_index) = text.find(name) {
-            if (found_index as u32) < first_index {
-                first_index = found_index as u32;
-                first_value = *value;
-            }
-        }
-    }
-
-    first_value
+fn get_first_digit_or_name(text: &str) -> Option<u32> {
+    get_sorted_digit_or_name(text, |(_, a), (_, b)| a.cmp(b))
 }
 
 /// Returns the value of the last digit or name of a digit found in the given string. A digit name
@@ -106,31 +72,20 @@ fn get_first_digit_or_name(text: &str) -> u32 {
 /// # Arguments
 ///
 /// 'text' - The string to search for the last digit or digit name.
-///
-/// # Panic
-///
-/// Panics if no digit or digit name is found in the input string.
-fn get_last_digit_or_name(text: &str) -> u32 {
-    let mut last_index = 0;
-    let mut last_value = 0;
-
-    for (name, value) in NAME_VALUE_MAP {
-        if let Some(found_index) = text.rfind(name) {
-            if (found_index as u32) >= last_index {
-                last_index = found_index as u32;
-                last_value = *value;
-            }
-        }
-    }
-
-    last_value
+fn get_last_digit_or_name(text: &str) -> Option<u32> {
+    get_sorted_digit_or_name(text, |(_, b), (_, a)| a.cmp(b))
 }
 
 /// Returns the sum of the calibration values found in each line of the input.
 pub fn part_one(input: &str) -> u32 {
     input
         .lines()
-        .map(|line| (get_first_digit(line), get_last_digit(line)))
+        .map(|line| {
+            (
+                get_first_digit(line).unwrap(),
+                get_last_digit(line).unwrap(),
+            )
+        })
         .map(|(f, l)| 10 * f + l)
         .sum()
 }
@@ -140,7 +95,12 @@ pub fn part_one(input: &str) -> u32 {
 pub fn part_two(input: &str) -> u32 {
     input
         .lines()
-        .map(|line| (get_first_digit_or_name(line), get_last_digit_or_name(line)))
+        .map(|line| {
+            (
+                get_first_digit_or_name(line).unwrap(),
+                get_last_digit_or_name(line).unwrap(),
+            )
+        })
         .map(|(f, l)| 10 * f + l)
         .sum()
 }
@@ -151,40 +111,45 @@ mod tests {
 
     #[test]
     fn can_retrieve_first_digit() {
-        assert_eq!(get_first_digit("1abc2"), 1);
-        assert_eq!(get_first_digit("pqr3stu8vwx"), 3);
-        assert_eq!(get_first_digit("a1b2c3d4e5f"), 1);
-        assert_eq!(get_first_digit("treb7uchet"), 7);
+        assert_eq!(get_first_digit("1abc2"), Some(1));
+        assert_eq!(get_first_digit("pqr3stu8vwx"), Some(3));
+        assert_eq!(get_first_digit("a1b2c3d4e5f"), Some(1));
+        assert_eq!(get_first_digit("treb7uchet"), Some(7));
+        assert_eq!(get_first_digit("trebuchet"), None);
     }
 
     #[test]
     fn can_retrieve_last_digit() {
-        assert_eq!(get_last_digit("1abc2"), 2);
-        assert_eq!(get_last_digit("pqr3stu8vwx"), 8);
-        assert_eq!(get_last_digit("a1b2c3d4e5f"), 5);
-        assert_eq!(get_last_digit("treb7uchet"), 7);
+        assert_eq!(get_last_digit("1abc2"), Some(2));
+        assert_eq!(get_last_digit("pqr3stu8vwx"), Some(8));
+        assert_eq!(get_last_digit("a1b2c3d4e5f"), Some(5));
+        assert_eq!(get_last_digit("treb7uchet"), Some(7));
+        assert_eq!(get_last_digit("trebuchet"), None);
     }
 
     #[test]
     fn can_retrieve_first_digit_or_digit_name_value() {
-        assert_eq!(get_first_digit_or_name("two1nine"), 2);
-        assert_eq!(get_first_digit_or_name("eightwothree"), 8);
-        assert_eq!(get_first_digit_or_name("abcone2threexyz"), 1);
-        assert_eq!(get_first_digit_or_name("xtwone3four"), 2);
-        assert_eq!(get_first_digit_or_name("4nineeightseven2"), 4);
-        assert_eq!(get_first_digit_or_name("zoneight234"), 1);
-        assert_eq!(get_first_digit_or_name("7pqrstsixteen"), 7);
+        assert_eq!(get_first_digit_or_name("two1nine"), Some(2));
+        assert_eq!(get_first_digit_or_name("eightwothree"), Some(8));
+        assert_eq!(get_first_digit_or_name("abcone2threexyz"), Some(1));
+        assert_eq!(get_first_digit_or_name("xtwone3four"), Some(2));
+        assert_eq!(get_first_digit_or_name("4nineeightseven2"), Some(4));
+        assert_eq!(get_first_digit_or_name("zoneight234"), Some(1));
+        assert_eq!(get_first_digit_or_name("7pqrstsixteen"), Some(7));
+        assert_eq!(get_first_digit_or_name("pqrstsaxteen"), None);
     }
 
     #[test]
     fn can_retrieve_last_digit_or_digit_name_value() {
-        assert_eq!(get_last_digit_or_name("two1nine"), 9);
-        assert_eq!(get_last_digit_or_name("eightwothree"), 3);
-        assert_eq!(get_last_digit_or_name("abcone2threexyz"), 3);
-        assert_eq!(get_last_digit_or_name("xtwone3four"), 4);
-        assert_eq!(get_last_digit_or_name("4nineeightseven2"), 2);
-        assert_eq!(get_last_digit_or_name("zoneight234"), 4);
-        assert_eq!(get_last_digit_or_name("7pqrstsixteen"), 6);
+        assert_eq!(get_last_digit_or_name("two1nine"), Some(9));
+        assert_eq!(get_last_digit_or_name("eightwothree"), Some(3));
+        assert_eq!(get_last_digit_or_name("abcone2threexyz"), Some(3));
+        assert_eq!(get_last_digit_or_name("xtwone3four"), Some(4));
+        assert_eq!(get_last_digit_or_name("4nineeightseven2"), Some(2));
+        assert_eq!(get_last_digit_or_name("zoneight234"), Some(4));
+        assert_eq!(get_last_digit_or_name("7pqrstsixteen"), Some(6));
+        assert_eq!(get_first_digit_or_name("7pqrstsaxteen"), Some(7));
+        assert_eq!(get_first_digit_or_name("pqrstsaxteen"), None);
     }
 
     #[test]
