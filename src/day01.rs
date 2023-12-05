@@ -76,33 +76,27 @@ fn get_last_digit_or_name(text: &str) -> Option<u32> {
     get_sorted_digit_or_name(text, |(_, b), (_, a)| a.cmp(b))
 }
 
-/// Returns the sum of the calibration values found in each line of the input.
-pub fn part_one(input: &str) -> u32 {
+fn process_input<F, G>(input: &str, first: F, last: G) -> u32
+where
+    F: Fn(&str) -> Option<u32>,
+    G: Fn(&str) -> Option<u32>,
+{
     input
         .lines()
-        .map(|line| {
-            (
-                get_first_digit(line).unwrap(),
-                get_last_digit(line).unwrap(),
-            )
-        })
+        .map(|line| (first(line).unwrap(), last(line).unwrap()))
         .map(|(f, l)| 10 * f + l)
         .sum()
+}
+
+/// Returns the sum of the calibration values found in each line of the input.
+pub fn part_one(input: &str) -> u32 {
+    process_input(input, get_first_digit, get_last_digit)
 }
 
 /// Returns the sum of the calibration values found in each line of the input, taking into account
 /// that the calibration values may be spelled out by name rather than using digit characters.
 pub fn part_two(input: &str) -> u32 {
-    input
-        .lines()
-        .map(|line| {
-            (
-                get_first_digit_or_name(line).unwrap(),
-                get_last_digit_or_name(line).unwrap(),
-            )
-        })
-        .map(|(f, l)| 10 * f + l)
-        .sum()
+    process_input(input, get_first_digit_or_name, get_last_digit_or_name)
 }
 
 #[cfg(test)]

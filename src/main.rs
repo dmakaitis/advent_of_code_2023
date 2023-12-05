@@ -1,10 +1,14 @@
+use num_format::{Locale, ToFormattedStr, ToFormattedString};
+
 mod day01;
 mod day02;
 mod day03;
 mod day04;
+mod day05;
 
 use std::env;
 use std::fs::read_to_string;
+use std::time::SystemTime;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -16,6 +20,8 @@ fn main() {
 
     let output1: String;
     let output2: String;
+
+    let start = SystemTime::now();
 
     match puzzle_number {
         Some(1) => {
@@ -33,15 +39,29 @@ fn main() {
             output1 = day03::part_one(&input).to_string();
             output2 = day03::part_two(&input).to_string();
         }
-        _ => {
+        Some(4) => {
             let input = read_input_file("input04.txt");
             output1 = day04::part_one(&input).to_string();
             output2 = day04::part_two(&input).to_string();
         }
+        _ => {
+            let input = read_input_file("input05.txt");
+            output1 = day05::part_one(&input).to_string();
+            output2 = day05::part_two(&input).to_string();
+        }
     }
+
+    let elapsed = start.elapsed();
 
     println!("Part one output: {output1}");
     println!("Part two output: {output2}");
+
+    if let Ok(time) = elapsed {
+        println!(
+            "Total elapsed time: {} ns",
+            time.as_nanos().to_formatted_string(&Locale::en)
+        );
+    }
 }
 
 /// Returns the contents of the given file, with any '\r' characters stripped out so we don't

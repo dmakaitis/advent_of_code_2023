@@ -53,15 +53,11 @@ impl FromStr for Row {
 ///
 /// 'text' - The schematic row to parse.
 fn get_symbol_indices(text: &str) -> Vec<Symbol> {
-    let mut result = vec![];
-
-    for (i, c) in text.chars().enumerate() {
-        if !c.is_numeric() && c != '.' {
-            result.push(Symbol::new(c, i));
-        }
-    }
-
-    result
+    text.chars()
+        .enumerate()
+        .filter(|(_, c)| !c.is_numeric() && *c != '.')
+        .map(|(i, c)| Symbol::new(c, i))
+        .collect()
 }
 
 /// Returns the locations and values of all numbers in the row.
