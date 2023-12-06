@@ -6,6 +6,12 @@ struct Outcome {
 }
 
 fn solve(t: i64, d: i64) -> Outcome {
+    // The solutions for this puzzle are all integer values 'x' that satisfy:
+    //
+    // (time - s) / 2 < x < (time + s) / 2
+    //
+    // where s = sqrt(time^2 - 4 * distance)
+
     let tf = t as f64;
     let df = d as f64;
 
@@ -14,9 +20,16 @@ fn solve(t: i64, d: i64) -> Outcome {
     let min = (tf - s) / 2.0;
     let max = (tf + s) / 2.0;
 
+    // At this point, min and max are the two real values for x where the total distance will
+    // exactly equal the target, so we need to convert to integers:
+
     let mut min = min.ceil() as i64;
     let mut max = max.floor() as i64;
 
+    // In the edge case where the real value for x above was already an integer, then we need
+    // to ignore that value since we need our distance to be greater than the target, not equal,
+    // so the following filters out any edge cases that might have been included above
+    // (each while loop is expected to execute zero or one times):
     while min * (t - min) <= d {
         min += 1;
     }
@@ -24,6 +37,7 @@ fn solve(t: i64, d: i64) -> Outcome {
         max -= 1;
     }
 
+    // The number of solutions is now the number of integer values within the range:
     let count = max - min + 1;
 
     Outcome {
