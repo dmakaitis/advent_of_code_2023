@@ -1,10 +1,11 @@
-use num_format::{Locale, ToFormattedStr, ToFormattedString};
+use num_format::{Locale, ToFormattedString};
 
 mod day01;
 mod day02;
 mod day03;
 mod day04;
 mod day05;
+mod day06;
 
 use std::env;
 use std::fs::read_to_string;
@@ -44,10 +45,15 @@ fn main() {
             output1 = day04::part_one(&input).to_string();
             output2 = day04::part_two(&input).to_string();
         }
-        _ => {
+        Some(5) => {
             let input = read_input_file("input05.txt");
             output1 = day05::part_one(&input).to_string();
             output2 = day05::part_two(&input).to_string();
+        }
+        _ => {
+            let input = read_input_file("input06.txt");
+            output1 = day06::part_one(&input).to_string();
+            output2 = day06::part_two(&input).to_string();
         }
     }
 
