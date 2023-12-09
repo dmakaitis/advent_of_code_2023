@@ -1,3 +1,5 @@
+extern crate core;
+
 use num_format::{Locale, ToFormattedString};
 
 mod day01;
@@ -7,6 +9,8 @@ mod day04;
 mod day05;
 mod day06;
 mod day07;
+mod day08;
+mod day09;
 
 use std::env;
 use std::fs::read_to_string;
@@ -56,10 +60,20 @@ fn main() {
             output1 = day06::part_one(&input).to_string();
             output2 = day06::part_two(&input).to_string();
         }
-        _ => {
+        Some(7) => {
             let input = read_input_file("input07.txt");
             output1 = day07::part_one(&input).to_string();
             output2 = day07::part_two(&input).to_string();
+        }
+        Some(8) => {
+            let input = read_input_file("input08.txt");
+            output1 = day08::part_one(&input).to_string();
+            output2 = day08::part_two(&input).to_string();
+        }
+        _ => {
+            let input = read_input_file("input09.txt");
+            output1 = day09::part_one(&input).to_string();
+            output2 = day09::part_two(&input).to_string();
         }
     }
 
