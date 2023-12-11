@@ -116,8 +116,6 @@ pub fn part_two(input: &str) -> u64 {
         .map(|s| (*s, 0usize))
         .collect();
 
-    println!("Starting nodes: {:?}", nodes);
-
     // It's not expressed in the problem, but each starting node leads to a fixed sized loop
     // leading repeatedly to an exit node, so we can optimize this solution to look for how many
     // times each path needs to be looped before everything converges to an equal number of total
@@ -131,12 +129,10 @@ pub fn part_two(input: &str) -> u64 {
     for node in nodes {
         let mut result = calc_steps_to_exit(node, &directions, &branches, is_exit_node);
         let first_result = result;
-        println!("{:?} => {:?}", node, result);
 
         // Verify that continuing the path results in a loop
         for _ in 0..directions.len() {
             let next_result = calc_steps_to_exit(result.0, &directions, &branches, is_exit_node);
-            println!("   {:?} => {:?}", result.0, next_result);
 
             assert_eq!(result.0 .0, next_result.0 .0);
             assert_eq!(result.1, next_result.1);
@@ -157,8 +153,6 @@ pub fn part_two(input: &str) -> u64 {
         } else {
             min_path_length = calc_lcm(min_path_length, result.1 as u64);
         }
-
-        println!("Updated minimum path length: {min_path_length}");
     }
 
     min_path_length
