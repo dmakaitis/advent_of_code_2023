@@ -20,6 +20,7 @@ mod day15;
 mod day16;
 mod day17;
 mod day18;
+mod day19;
 
 use std::env;
 use std::fs::read_to_string;
@@ -124,10 +125,15 @@ fn main() {
             output1 = day17::part_one(&input).to_string();
             output2 = day17::part_two(&input).to_string();
         }
-        _ => {
+        Some(18) => {
             let input = read_input_file("input18.txt");
             output1 = day18::part_one(&input).to_string();
             output2 = day18::part_two(&input).to_string();
+        }
+        _ => {
+            let input = read_input_file("input19.txt");
+            output1 = day19::part_one(&input).to_string();
+            output2 = day19::part_two(&input).to_string();
         }
     }
 
