@@ -473,33 +473,16 @@ pub fn part_two(input: &str) -> u64 {
     let mut accepted = vec![];
 
     while let Some(template) = templates.pop() {
-        println!("{:?}", &template);
         let rule = &workflows[template.rule.as_str()];
-        println!("    {:?}", rule);
         let new_templates = rule.split_template(&template);
 
         for t in new_templates {
-            println!("    {:?}", t);
             if t.rule == "A" {
                 accepted.push(t);
             } else if t.rule != "R" {
                 templates.push(t);
             }
         }
-    }
-
-    println!("{} accepted templates", accepted.len());
-
-    accepted.sort_by_key(|p| p.s.0);
-    accepted.sort_by_key(|p| p.a.0);
-    accepted.sort_by_key(|p| p.m.0);
-    accepted.sort_by_key(|p| p.x.0);
-    for a in &accepted {
-        println!(
-            "Accepted {:?} with {} combinations",
-            a,
-            a.get_distinct_count()
-        );
     }
 
     accepted.iter().map(|a| a.get_distinct_count()).sum()
