@@ -52,7 +52,7 @@ fn parse_map(s: &str) -> Vec<Vec<Cell>> {
                     '|' => VSplitter,
                     _ => Empty,
                 })
-                .map(|entity| Cell::new(entity))
+                .map(Cell::new)
                 .collect_vec()
         })
         .collect_vec()
@@ -168,7 +168,7 @@ fn reset(map: &mut Vec<Vec<Cell>>) {
     }
 }
 
-fn calculate_energy(map: &Vec<Vec<Cell>>) -> i32 {
+fn calculate_energy(map: &[Vec<Cell>]) -> i32 {
     map.iter()
         .map(|l| {
             l.iter()

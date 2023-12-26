@@ -43,7 +43,7 @@ impl<'a> From<&'a str> for Rule<'a> {
         }
         .unwrap();
 
-        let (val, result) = value[2..].split(":").collect_tuple().unwrap();
+        let (val, result) = value[2..].split(':').collect_tuple().unwrap();
 
         let val = val.parse::<u32>().unwrap();
 
@@ -115,7 +115,8 @@ impl<'a> Rule<'a> {
                         )
                     };
                 }
-                return (n, r);
+
+                (n, r)
             }
             M => {
                 let n;
@@ -164,7 +165,8 @@ impl<'a> Rule<'a> {
                         )
                     };
                 }
-                return (n, r);
+
+                (n, r)
             }
             A => {
                 let n;
@@ -213,7 +215,8 @@ impl<'a> Rule<'a> {
                         )
                     };
                 }
-                return (n, r);
+
+                (n, r)
             }
             S => {
                 let n;
@@ -262,7 +265,8 @@ impl<'a> Rule<'a> {
                         )
                     };
                 }
-                return (n, r);
+
+                (n, r)
             }
         }
     }
@@ -276,7 +280,7 @@ struct Workflow<'a> {
 
 impl<'a> From<&'a str> for Workflow<'a> {
     fn from(value: &'a str) -> Self {
-        let mut parts = value.split(",").collect_vec();
+        let mut parts = value.split(',').collect_vec();
         let default = parts[parts.len() - 1];
 
         parts.remove(parts.len() - 1);
@@ -309,7 +313,7 @@ impl<'a> Workflow<'a> {
             }
         }
 
-        return self.default;
+        self.default
     }
 
     fn split_template(&self, template: &Template) -> Vec<Template> {
@@ -345,11 +349,11 @@ struct Part {
 impl From<&str> for Part {
     fn from(value: &str) -> Self {
         let values = value
-            .strip_prefix("{")
+            .strip_prefix('{')
             .unwrap()
-            .strip_suffix("}")
+            .strip_suffix('}')
             .unwrap()
-            .split(",")
+            .split(',')
             .collect_vec();
         let mut i = values.iter();
 
@@ -418,9 +422,9 @@ impl Template {
 
 fn parse_workflow(s: &str) -> (&str, Workflow) {
     let (name, rules) = s
-        .strip_suffix("}")
+        .strip_suffix('}')
         .unwrap()
-        .split("{")
+        .split('{')
         .collect_tuple()
         .unwrap();
 
@@ -437,7 +441,7 @@ fn parse_workflow(s: &str) -> (&str, Workflow) {
 pub fn part_one(input: &str) -> u32 {
     let (workflows, parts) = input.split("\n\n").collect_tuple().unwrap();
     let workflows: HashMap<&str, Workflow> = workflows.lines().map(|w| parse_workflow(w)).collect();
-    let parts = parts.lines().map(|line| Part::from(line)).collect_vec();
+    let parts = parts.lines().map(Part::from).collect_vec();
 
     let mut accepted = vec![];
 

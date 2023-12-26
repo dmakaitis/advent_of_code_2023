@@ -1,71 +1,107 @@
+use crate::day12::DfaState::*;
 use itertools::Itertools;
 
-fn get_possibilities(s: &str) -> Vec<String> {
-    if s.len() <= 1 {
-        if s == "?" {
-            return vec![String::from("."), String::from("#")];
-        } else {
-            return vec![String::from(s)];
-        }
-    }
+#[derive(Debug, Eq, PartialEq)]
+enum DfaState {
+    RepDotOrHash,
+    Hash,
+    Dot,
+    RepDotOrAccept,
+}
 
-    let head = &s[0..1];
-    let tail = &s[1..];
-
-    let tail_possiblities = get_possibilities(tail);
-
+fn build_dfa(checksum: &Vec<i32>) -> Vec<DfaState> {
     let mut result = vec![];
+    let mut first = true;
 
-    if head == "." || head == "?" {
-        for p in &tail_possiblities {
-            result.push(format!(".{p}"));
+    for c in checksum {
+        if !first {
+            result.push(Dot);
+        }
+        first = false;
+
+        result.push(RepDotOrHash);
+        for _ in 0..(c - 1) {
+            result.push(Hash);
         }
     }
-    if head == "#" || head == "?" {
-        for p in &tail_possiblities {
-            result.push(format!("#{p}"));
-        }
-    }
+
+    result.push(RepDotOrAccept);
 
     result
 }
 
-fn calculate_checksum(s: &str) -> Vec<i32> {
-    let mut result = vec![];
-    let mut count = 0;
-
-    for c in s.chars() {
-        if c == '.' {
-            if count > 0 {
-                result.push(count);
-                count = 0;
-            }
-        } else {
-            count += 1;
-        }
-    }
-
-    if count > 0 {
-        result.push(count);
-    }
-
-    result
-}
-
-fn get_valid_possibility_count(s: &str) -> i32 {
+fn get_valid_possibility_count(s: &str) -> i64 {
     let (a, b) = s.split_whitespace().collect_tuple().unwrap();
 
-    let possibilties = get_possibilities(a);
-    let checksum = b
-        .split(',')
-        .map(|s| s.parse::<i32>())
-        .flatten()
-        .collect_vec();
+    let checksum = b.split(',').flat_map(|s| s.parse::<i32>()).collect_vec();
 
-    possibilties
-        .iter()
-        .filter(|p| calculate_checksum(p.as_str()) == checksum)
-        .count() as i32
+    let dfa = build_dfa(&checksum);
+    let mut heads = vec![0; dfa.len()];
+    heads[0] = 1;
+
+    // println!("Heads: {:?}", heads);
+    for c in a.chars() {
+        let mut next_heads = vec![0; dfa.len()];
+
+        for i in 0..heads.len() {
+            let index = dfa.len() - (i + 1);
+            match dfa[index] {
+                RepDotOrHash => match c {
+                    '.' => {
+                        next_heads[index] += heads[index];
+                    }
+                    '#' => {
+                        next_heads[index + 1] += heads[index];
+                    }
+                    '?' => {
+                        next_heads[index] += heads[index];
+                        next_heads[index + 1] += heads[index];
+                    }
+                    _ => {
+                        panic!("Invalid character in spring pattern");
+                    }
+                },
+                Hash => {
+                    match c {
+                        '#' | '?' => {
+                            next_heads[index + 1] += heads[index];
+                        }
+                        '.' => {} // reject
+                        _ => {
+                            panic!("Invalid character in spring pattern");
+                        }
+                    }
+                }
+                Dot => {
+                    match c {
+                        '.' | '?' => {
+                            next_heads[index + 1] += heads[index];
+                        }
+                        '#' => {} // reject
+                        _ => {
+                            panic!("Invalid character in spring pattern");
+                        }
+                    }
+                }
+                RepDotOrAccept => {
+                    match c {
+                        '.' | '?' => {
+                            next_heads[index] += heads[index];
+                        }
+                        '#' => {} // reject
+                        _ => {
+                            panic!("Invalid character in spring pattern");
+                        }
+                    }
+                }
+            }
+        }
+
+        heads = next_heads;
+    }
+
+    // The last node is our only accept node, so just return how many heads made it there:
+    heads[heads.len() - 1]
 }
 
 fn expand_input(s: &str) -> String {
@@ -79,11 +115,8 @@ fn expand_input(s: &str) -> String {
 /// #Argument
 ///
 /// 'input' - The input.
-pub fn part_one(input: &str) -> i32 {
-    input
-        .lines()
-        .map(|line| get_valid_possibility_count(line))
-        .sum()
+pub fn part_one(input: &str) -> i64 {
+    input.lines().map(get_valid_possibility_count).sum()
 }
 
 ///
@@ -91,13 +124,11 @@ pub fn part_one(input: &str) -> i32 {
 /// #Argument
 ///
 /// 'input' - The input.
-pub fn part_two(input: &str) -> i32 {
+pub fn part_two(input: &str) -> i64 {
     input
         .lines()
-        .map(|line| expand_input(line))
-        .inspect(|line| print!("{line} => "))
+        .map(expand_input)
         .map(|line| get_valid_possibility_count(line.as_str()))
-        .inspect(|v| println!("{v}"))
         .sum()
 }
 
@@ -106,57 +137,23 @@ mod tests {
     use crate::day12::*;
 
     #[test]
-    fn test_get_possibilities() {
-        assert_eq!(get_possibilities(".###"), vec![String::from(".###"),]);
+    fn test_build_dfa() {
+        let dfa = build_dfa(&vec![3, 2, 1]);
 
         assert_eq!(
-            get_possibilities("?.###"),
-            vec![String::from("..###"), String::from("#.###"),]
-        );
-
-        assert_eq!(
-            get_possibilities("??.###"),
+            dfa,
             vec![
-                String::from("...###"),
-                String::from(".#.###"),
-                String::from("#..###"),
-                String::from("##.###"),
+                RepDotOrHash,
+                Hash,
+                Hash,
+                Dot,
+                RepDotOrHash,
+                Hash,
+                Dot,
+                RepDotOrHash,
+                RepDotOrAccept
             ]
         );
-
-        assert_eq!(
-            get_possibilities("???.###"),
-            vec![
-                String::from("....###"),
-                String::from("..#.###"),
-                String::from(".#..###"),
-                String::from(".##.###"),
-                String::from("#...###"),
-                String::from("#.#.###"),
-                String::from("##..###"),
-                String::from("###.###"),
-            ]
-        );
-
-        assert_eq!(
-            get_possibilities("??"),
-            vec![
-                String::from(".."),
-                String::from(".#"),
-                String::from("#."),
-                String::from("##"),
-            ]
-        )
-    }
-
-    #[test]
-    fn test_calculate_checksum() {
-        assert_eq!(calculate_checksum("#.#.###"), vec![1, 1, 3]);
-        assert_eq!(calculate_checksum(".#...#....###."), vec![1, 1, 3]);
-        assert_eq!(calculate_checksum(".#.###.#.######"), vec![1, 3, 1, 6]);
-        assert_eq!(calculate_checksum("####.#...#..."), vec![4, 1, 1]);
-        assert_eq!(calculate_checksum("#....######..#####."), vec![1, 6, 5]);
-        assert_eq!(calculate_checksum(".###.##....#"), vec![3, 2, 1]);
     }
 
     #[test]
@@ -193,13 +190,18 @@ mod tests {
         );
     }
 
-    //     #[test]
-    //     fn part_two_correct() {
-    //         assert_eq!(part_two("???.### 1,1,3
-    // .??..??...?##. 1,1,3
-    // ?#?#?#?#?#?#?#? 1,3,1,6
-    // ????.#...#... 4,1,1
-    // ????.######..#####. 1,6,5
-    // ?###???????? 3,2,1"), 525152);
-    //     }
+    #[test]
+    fn part_two_correct() {
+        assert_eq!(
+            part_two(
+                "???.### 1,1,3
+.??..??...?##. 1,1,3
+?#?#?#?#?#?#?#? 1,3,1,6
+????.#...#... 4,1,1
+????.######..#####. 1,6,5
+?###???????? 3,2,1"
+            ),
+            525152
+        );
+    }
 }

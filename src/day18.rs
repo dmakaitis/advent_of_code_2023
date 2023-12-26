@@ -140,10 +140,7 @@ fn calculate_volume(commands: Vec<Command>) -> i64 {
                 y >= min_y && y <= max_y
             })
             .filter(|edge| edge.a.0 == edge.b.0)
-            .sorted_by_key(|edge| {
-                let min_x = edge.a.0.min(edge.b.0);
-                min_x
-            })
+            .sorted_by_key(|edge| edge.a.0.min(edge.b.0))
             .collect_vec();
 
         let mut enter_x = i64::MIN;
@@ -209,7 +206,7 @@ fn calculate_volume(commands: Vec<Command>) -> i64 {
 ///
 /// 'input' - The input.
 pub fn part_one(input: &str) -> i64 {
-    let commands = input.lines().map(|line| Command::from(line)).collect_vec();
+    let commands = input.lines().map(Command::from).collect_vec();
 
     calculate_volume(commands)
 }
@@ -222,7 +219,7 @@ pub fn part_one(input: &str) -> i64 {
 pub fn part_two(input: &str) -> i64 {
     let commands = input
         .lines()
-        .map(|line| Command::from(line))
+        .map(Command::from)
         .map(|cmd| Command {
             vector: cmd.vector_large,
             vector_large: cmd.vector,

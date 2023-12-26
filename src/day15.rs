@@ -22,9 +22,9 @@ struct Step<'a> {
 impl<'a> From<&'a str> for Step<'a> {
     fn from(value: &'a str) -> Self {
         let index = value.find('-');
-        if index.is_some() {
+        if let Some(end) = index {
             return Step {
-                label: &value[0..index.unwrap()],
+                label: &value[0..end],
                 operation: Operation::Remove,
             };
         }
@@ -34,7 +34,7 @@ impl<'a> From<&'a str> for Step<'a> {
         let focal_length = parts.next().unwrap().parse::<i32>().unwrap();
 
         Step {
-            label: label,
+            label,
             operation: Operation::Add(focal_length),
         }
     }
@@ -46,7 +46,7 @@ fn calculate_hash(s: &str) -> i32 {
     for c in s.chars() {
         hash += c as i32;
         hash *= 17;
-        hash = hash & 0xff;
+        hash &= 0xff;
     }
 
     hash
@@ -58,7 +58,7 @@ fn calculate_hash(s: &str) -> i32 {
 ///
 /// 'input' - The input.
 pub fn part_one(input: &str) -> i32 {
-    input.split(',').map(|s| calculate_hash(s)).sum()
+    input.split(',').map(calculate_hash).sum()
 }
 
 ///
@@ -69,7 +69,7 @@ pub fn part_one(input: &str) -> i32 {
 pub fn part_two(input: &str) -> i32 {
     let mut boxes = vec![VecDeque::<Lens>::new(); 256];
 
-    let steps = input.split(',').map(|s| Step::from(s)).collect_vec();
+    let steps = input.split(',').map(Step::from).collect_vec();
 
     for step in steps {
         let hash = calculate_hash(step.label);
@@ -77,7 +77,7 @@ pub fn part_two(input: &str) -> i32 {
 
         match step.operation {
             Operation::Add(focal_length) => {
-                if let Some(lens) = lens_box.iter_mut().filter(|l| l.label == step.label).next() {
+                if let Some(lens) = lens_box.iter_mut().find(|l| l.label == step.label) {
                     lens.focal_length = focal_length;
                 } else {
                     lens_box.push_back(Lens {

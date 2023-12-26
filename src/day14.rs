@@ -22,7 +22,7 @@ impl Display for Map {
 
         for y in 0..self.height {
             for x in 0..self.width {
-                if let Some(rock) = self.rocks.iter().filter(|r| r.x == x && r.y == y).next() {
+                if let Some(rock) = self.rocks.iter().find(|r| r.x == x && r.y == y) {
                     if rock.obstacle {
                         result.push('#');
                     } else {
@@ -132,7 +132,7 @@ impl Map {
 }
 
 fn parse_map(s: &str) -> Map {
-    let width = s.lines().nth(0).unwrap().len();
+    let width = s.lines().next().unwrap().len();
     let mut height = 0usize;
 
     let mut rocks = Vec::new();

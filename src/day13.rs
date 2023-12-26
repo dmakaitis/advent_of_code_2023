@@ -18,7 +18,7 @@ fn encode_by_row(s: &str) -> Vec<i32> {
 }
 
 fn encode_by_column(s: &str) -> Vec<i32> {
-    let width = s.lines().nth(0).unwrap().len();
+    let width = s.lines().next().unwrap().len();
 
     let mut result = vec![];
 
@@ -40,7 +40,7 @@ fn encode_by_column(s: &str) -> Vec<i32> {
     result
 }
 
-fn is_reflection(left: &[i32], right: &[i32]) -> bool {
+fn is_reflection_without_smudge(left: &[i32], right: &[i32]) -> bool {
     let len = if left.len() < right.len() {
         left.len()
     } else {
@@ -88,7 +88,16 @@ fn is_reflection_with_smudge(left: &[i32], right: &[i32]) -> bool {
 
     // Difference must be by exactly one bit:
     let diff_less_one = diff_value - 1;
-    return diff_value & diff_less_one == 0;
+
+    diff_value & diff_less_one == 0
+}
+
+fn is_reflection(left: &[i32], right: &[i32], smudge: bool) -> bool {
+    if smudge {
+        is_reflection_with_smudge(left, right)
+    } else {
+        is_reflection_without_smudge(left, right)
+    }
 }
 
 fn find_reflection(values: &[i32], smudge: bool) -> Option<usize> {
@@ -100,9 +109,7 @@ fn find_reflection(values: &[i32], smudge: bool) -> Option<usize> {
         left = &values[0..index];
         right = &values[index..];
 
-        if !smudge && is_reflection(left, right) {
-            return Some(index);
-        } else if smudge && is_reflection_with_smudge(left, right) {
+        if is_reflection(left, right, smudge) {
             return Some(index);
         }
 
@@ -115,14 +122,14 @@ fn get_reflection_value(s: &str, smudge: bool) -> i32 {
     let values = encode_by_row(s);
     let reflection = find_reflection(&values, smudge);
 
-    if reflection.is_some() {
-        return 100 * (reflection.unwrap() as i32);
+    if let Some(value) = reflection {
+        return 100 * (value as i32);
     }
 
     let values = encode_by_column(s);
     let reflection = find_reflection(&values, smudge);
 
-    return reflection.unwrap() as i32;
+    reflection.unwrap() as i32
 }
 
 ///

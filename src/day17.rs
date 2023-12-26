@@ -87,8 +87,8 @@ impl Map {
                     if new_x == 0 {
                         break;
                     }
-                    new_x = new_x - 1;
-                    cost = cost + self.heat[y][new_x];
+                    new_x -= 1;
+                    cost += self.heat[y][new_x];
                     if i + 1 >= min {
                         result.push(Node {
                             x: new_x,
@@ -103,11 +103,11 @@ impl Map {
                 let mut new_x = x;
                 let mut cost = old_cost;
                 for i in 0..max {
-                    new_x = new_x + 1;
+                    new_x += 1;
                     if new_x >= self.width {
                         break;
                     }
-                    cost = cost + self.heat[y][new_x];
+                    cost += self.heat[y][new_x];
                     if i + 1 >= min {
                         result.push(Node {
                             x: new_x,
@@ -125,8 +125,8 @@ impl Map {
                     if new_y == 0 {
                         break;
                     }
-                    new_y = new_y - 1;
-                    cost = cost + self.heat[new_y][x];
+                    new_y -= 1;
+                    cost += self.heat[new_y][x];
                     if i + 1 >= min {
                         result.push(Node {
                             x,
@@ -141,11 +141,11 @@ impl Map {
                 let mut new_y = y;
                 let mut cost = old_cost;
                 for i in 0..max {
-                    new_y = new_y + 1;
+                    new_y += 1;
                     if new_y >= self.height {
                         break;
                     }
-                    cost = cost + self.heat[new_y][x];
+                    cost += self.heat[new_y][x];
                     if i + 1 >= min {
                         result.push(Node {
                             x,
