@@ -1,10 +1,89 @@
+use itertools::Itertools;
+
+#[derive(Debug)]
+struct Vector {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+impl From<&str> for Vector {
+    fn from(value: &str) -> Self {
+        let (x, y, z) = value
+            .split(',')
+            .map(|s| s.trim())
+            .flat_map(|s| s.parse::<f64>())
+            .collect_tuple()
+            .unwrap();
+
+        Vector { x, y, z }
+    }
+}
+
+#[derive(Debug)]
+struct Hailstone {
+    pos: Vector,
+    vec: Vector,
+}
+
+impl From<&str> for Hailstone {
+    fn from(value: &str) -> Self {
+        let (pos, vec) = value.split('@').map(Vector::from).collect_tuple().unwrap();
+
+        Hailstone { pos, vec }
+    }
+}
+
+fn get_intersect_x_y(a: &Hailstone, b: &Hailstone) -> Option<(f64, f64)> {
+    let den = a.vec.y * b.vec.x - a.vec.x * b.vec.y;
+    if den == 0.0 {
+        return None;
+    }
+
+    let num = b.vec.x * (b.pos.y - a.pos.y) - b.vec.y * (b.pos.x - a.pos.x);
+    let c = num / den;
+    if c < 0.0 {
+        return None;
+    }
+
+    let num = a.vec.x * (b.pos.y - a.pos.y) - a.vec.y * (b.pos.x - a.pos.x);
+    let d = num / den;
+    if d < 0.0 {
+        return None;
+    }
+
+    Some((a.pos.x + c * a.vec.x, a.pos.y + c * a.vec.y))
+}
+
+fn solve_part_one(input: &str, bounds: (f64, f64)) -> i32 {
+    let stones = input.lines().map(Hailstone::from).collect_vec();
+
+    let mut count = 0;
+
+    for (i, a) in stones.iter().enumerate() {
+        for j in (i + 1)..stones.len() {
+            let b = &stones[j];
+
+            let int = get_intersect_x_y(a, b);
+
+            if let Some((x, y)) = int {
+                if x >= bounds.0 && x <= bounds.1 && y >= bounds.0 && y <= bounds.1 {
+                    count += 1;
+                }
+            }
+        }
+    }
+
+    count
+}
+
 ///
 ///
 /// #Argument
 ///
 /// 'input' - The input.
 pub fn part_one(input: &str) -> i32 {
-    0
+    solve_part_one(input, (200000000000000.0, 400000000000000.0))
 }
 
 ///
@@ -22,11 +101,30 @@ mod tests {
 
     #[test]
     fn part_one_correct() {
-        assert_eq!(part_one(""), 0);
+        assert_eq!(
+            solve_part_one(
+                "19, 13, 30 @ -2,  1, -2
+18, 19, 22 @ -1, -1, -2
+20, 25, 34 @ -2, -2, -4
+12, 31, 28 @ -1, -2, -1
+20, 19, 15 @  1, -5, -3",
+                (7.0, 27.0)
+            ),
+            2
+        );
     }
 
-    #[test]
+    // #[test]
     fn part_two_correct() {
-        assert_eq!(part_two(""), 0);
+        assert_eq!(
+            part_two(
+                "19, 13, 30 @ -2,  1, -2
+18, 19, 22 @ -1, -1, -2
+20, 25, 34 @ -2, -2, -4
+12, 31, 28 @ -1, -2, -1
+20, 19, 15 @  1, -5, -3"
+            ),
+            47
+        );
     }
 }
