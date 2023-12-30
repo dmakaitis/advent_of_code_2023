@@ -1,4 +1,6 @@
 use itertools::Itertools;
+use rulinalg::matrix::Matrix;
+use std::ops::Mul;
 
 #[derive(Debug)]
 struct Vector {
@@ -61,12 +63,8 @@ fn solve_part_one(input: &str, bounds: (f64, f64)) -> i32 {
     let mut count = 0;
 
     for (i, a) in stones.iter().enumerate() {
-        for j in (i + 1)..stones.len() {
-            let b = &stones[j];
-
-            let int = get_intersect_x_y(a, b);
-
-            if let Some((x, y)) = int {
+        for b in stones.iter().skip(i + 1) {
+            if let Some((x, y)) = get_intersect_x_y(a, b) {
                 if x >= bounds.0 && x <= bounds.1 && y >= bounds.0 && y <= bounds.1 {
                     count += 1;
                 }
@@ -75,6 +73,17 @@ fn solve_part_one(input: &str, bounds: (f64, f64)) -> i32 {
     }
 
     count
+}
+
+fn get_coefficients(h1: &Hailstone, h2: &Hailstone) -> (Vec<f64>, Vec<f64>) {
+    let a = h2.vec.y - h1.vec.y;
+    let b = h1.vec.x - h2.vec.x;
+    let d = h1.pos.y - h2.pos.y;
+    let e = h2.pos.x - h1.pos.x;
+
+    let v = h1.vec.x * h1.pos.y - h2.vec.x * h2.pos.y + h2.pos.x * h2.vec.y - h1.pos.x * h1.vec.y;
+
+    (vec![a, b, d, e], vec![v])
 }
 
 ///
@@ -91,8 +100,47 @@ pub fn part_one(input: &str) -> i32 {
 /// #Argument
 ///
 /// 'input' - The input.
-pub fn part_two(input: &str) -> i32 {
-    0
+pub fn part_two(input: &str) -> i64 {
+    let stones = input.lines().map(Hailstone::from).collect_vec();
+
+    let mut coefficients = (vec![], vec![]);
+
+    let h1 = &stones[0];
+    for h2 in stones.iter().take(5).skip(1) {
+        let mut c = get_coefficients(h1, h2);
+
+        coefficients.0.append(&mut c.0);
+        coefficients.1.append(&mut c.1);
+    }
+
+    let a = Matrix::new(4, 4, coefficients.0);
+    let x = Matrix::new(4, 1, coefficients.1);
+
+    let result = a.inverse().unwrap().mul(x).into_vec();
+    let a = result[0];
+    let b = result[1];
+    let d = result[2];
+    let e = result[3];
+
+    let t1 = (a - h1.pos.x) / (h1.vec.x - d);
+
+    let h2 = &stones[1];
+    let t2 = (a - h2.pos.x) / (h2.vec.x - d);
+
+    let f = ((h1.pos.z - h2.pos.z) + t1 * h1.vec.z - t2 * h2.vec.z) / (t1 - t2);
+    let c = h1.pos.z + t1 * (h1.vec.z - f);
+
+    // Convert everything to integer values to get rid of decimal imprecisions...
+    let a = a as i64;
+    let b = b as i64;
+    let c = c as i64;
+    let d = d as i64;
+    let e = e as i64;
+    let f = f as i64;
+
+    println!("({a}, {b}, {c}) @ ({d}, {e}, {f})");
+
+    a + b + c
 }
 
 #[cfg(test)]
@@ -114,7 +162,7 @@ mod tests {
         );
     }
 
-    // #[test]
+    #[test]
     fn part_two_correct() {
         assert_eq!(
             part_two(

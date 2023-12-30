@@ -60,10 +60,10 @@ fn find_next_node(
     options.retain(|(a, b)| (*a, *b) != (lx, ly));
 
     if options.len() != 1 {
-        return ((x, y), cost);
+        ((x, y), cost)
     } else {
         let opt = options[0];
-        return find_next_node(map, opt, (x, y), cost + 1);
+        find_next_node(map, opt, (x, y), cost + 1)
     }
 }
 
@@ -176,11 +176,7 @@ pub fn part_one(input: &str) -> i32 {
 ///
 /// 'input' - The input.
 pub fn part_two(input: &str) -> usize {
-    let input = input
-        .replace('>', ".")
-        .replace('<', ".")
-        .replace('^', ".")
-        .replace('v', ",");
+    let input = input.replace(['>', '<', '^', 'v'], ".");
 
     let paths = build_graph(input.as_str());
 
