@@ -117,7 +117,7 @@ pub fn part_two(input: &str) -> i64 {
     let x = Matrix::new(4, 1, coefficients.1);
 
     let result = a.inverse().unwrap().mul(x).into_vec();
-    let (a, b, d, e) = result.iter().map(|v| *v).collect_tuple().unwrap();
+    let (a, b, d, e) = result.iter().copied().collect_tuple().unwrap();
 
     let t1 = (a - h1.pos.x) / (h1.vec.x - d);
 
@@ -128,7 +128,7 @@ pub fn part_two(input: &str) -> i64 {
     let c = h1.pos.z + t1 * (h1.vec.z - f);
 
     // Convert everything to integer values to get rid of decimal imprecisions...
-    let (a, b, c, _d, _e, _f) = vec![a, b, c, d, e, f]
+    let (a, b, c, _d, _e, _f) = [a, b, c, d, e, f]
         .iter()
         .map(|v| *v as i64)
         .collect_tuple()
