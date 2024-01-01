@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use rand::random;
 use std::collections::{HashMap, HashSet};
-use std::mem::swap;
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
 struct Edge {
@@ -72,9 +71,6 @@ impl Graph {
                 };
                 if edge.b == b {
                     edge.b = a;
-                };
-                if edge.a > edge.b {
-                    swap(&mut edge.a, &mut edge.b);
                 };
             });
             edges.retain(|e| e.a != e.b);
