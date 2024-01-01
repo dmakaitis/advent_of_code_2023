@@ -127,7 +127,7 @@ pub fn part_one(input: &str) -> usize {
     let mut size = usize::MAX;
     let mut product = 0;
 
-    // Theoretically, we can find the minimal cut of the graph by iterating through Karger's algorithm N * log(N)
+    // Theoretically, we can find the minimal cut of the graph by iterating through Karger's algorithm N * ln(N)
     // times (where N is the number of nodes in the graph) and keeping the the result with the lowest number of
     // remaining edges. However, we know from the puzzle description that the minimal cut will have three edges, so
     // we only have to keep repeating until we find a solution that collapses into only three edges. This saves us from
